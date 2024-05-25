@@ -1,41 +1,38 @@
-import Notiflix from 'notiflix';
-
-function createPromise(position, delay) {
+async function createPromise(position, delay) {
   return new Promise((resolve, reject) => {
-    const shouldResolve = Math.random() > 0.3;
-    if (shouldResolve) {
-      resolve({ position, delay });
-    } else {
-      reject({ position, delay });
-    }
+    setTimeout(() => {
+      const shouldResolve = Math.random() > 0.3;
+      if (shouldResolve) {
+        resolve({ position, delay });
+      } else {
+        reject({ position, delay });
+      }
+    }, delay);
   });
 }
 
 const form = document.querySelector('.form');
 
-form.addEventListener('submit', function (event) {
+form.addEventListener('submit', async event => {
   event.preventDefault();
 
-  const delay = parseInt(this.elements.delay.value);
-  const step = parseInt(this.elements.step.value);
-  const amount = parseInt(this.elements.amount.value);
+  const formData = new FormData(event.target);
+  let delay = parseInt(formData.get('delay'));
+  const step = parseInt(formData.get('step'));
+  const amount = parseInt(formData.get('amount'));
 
-  const promises = [];
-  for (let i = 0; i < amount; i++) {
-    promises.push(createPromise(i + 1, delay + step * i));
+  for (let i = 1; i <= amount; i++) {
+    try {
+      const result = await createPromise(i, delay);
+      console.log(
+        `✅ Fulfilled promise ${result.position} in ${result.delay}ms`
+      );
+    } catch (error) {
+      console.log(
+        `❌ Promisiunea ${error.position} a fost respinsă în ${error.delay}ms`
+      );
+    }
+
+    delay += step;
   }
-
-  promises.forEach(promise => {
-    promise
-      .then(({ position, delay }) => {
-        Notiflix.Notify.Success(
-          `✅ Fulfilled promise ${position} in ${delay}ms`
-        );
-      })
-      .catch(({ position, delay }) => {
-        Notiflix.Notify.Failure(
-          `❌ Rejected promise ${position} in ${delay}ms`
-        );
-      });
-  });
 });
