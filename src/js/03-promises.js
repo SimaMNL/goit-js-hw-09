@@ -1,3 +1,7 @@
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
+import Notiflix from 'notiflix';
+
 async function createPromise(position, delay) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -13,26 +17,32 @@ async function createPromise(position, delay) {
 
 const form = document.querySelector('.form');
 
-form.addEventListener('submit', async event => {
+form.addEventListener('submit', onSubmitForm);
+function onSubmitForm(event) {
   event.preventDefault();
-
-  const formData = new FormData(event.target);
-  let delay = parseInt(formData.get('delay'));
-  const step = parseInt(formData.get('step'));
-  const amount = parseInt(formData.get('amount'));
-
-  for (let i = 1; i <= amount; i++) {
-    try {
-      const result = await createPromise(i, delay);
-      console.log(
-        `✅ Fulfilled promise ${result.position} in ${result.delay}ms`
-      );
-    } catch (error) {
-      console.log(
-        `❌ Promisiunea ${error.position} a fost respinsă în ${error.delay}ms`
-      );
+  const { delay, step, amount } = event.currentTarget.elements;
+  if (delay.value < 0 || step.value < 0 || amount.value < 0) {
+    Notiflix.Notify.warning(`!!! Please enter a positive number`);
+  } else {
+    for (let i = 0; i < amount.value; i++) {
+      let position = i + 1;
+      const delays = Number(delay.value) + step.value * i;
+      createPromise(position, delays)
+        .then(({ position, delay }) => {
+          Notiflix.Notify.success(
+            `✅ Fulfilled promise ${position} in ${delay}ms`
+          ),
+            console.log(`✅ Fulfilled promise ${position} in ${delay}ms`);
+        })
+        .catch(({ position, delay }) => {
+          Notiflix.Notify.failure(
+            `❌ Rejected promise ${position} in ${delay}ms`
+          ),
+            console.log(
+              `❌ Promisiunea ${position} a fost respinsă în ${delay}ms`
+            );
+        });
     }
-
-    delay += step;
   }
-});
+  event.currentTarget.reset();
+}
